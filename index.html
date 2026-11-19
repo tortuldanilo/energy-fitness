@@ -19,6 +19,7 @@
   <!-- ======================================== -->
 
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700;1,900&display=swap" rel="stylesheet">
+  <script src="config.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
@@ -172,9 +173,10 @@
     @media (max-width: 900px) {
       #adminView { width: 100%; }
       .admin-layout { height: auto; min-height: 100vh; min-height: 100dvh; border-radius: 0; border: none; }
-      .sidebar { flex-direction: row; align-items: center; gap: 10px; padding: 12px; }
+      .sidebar { box-sizing: border-box; flex-direction: row; align-items: center; gap: 10px; padding: 12px; }
       .sidebar .logo-container { display: none; }
-      .nav-menu { margin: 0; display: flex; gap: 8px; flex: 1; overflow-x: auto; }
+      .nav-menu { margin: 0; display: flex; gap: 8px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+      .nav-menu::-webkit-scrollbar { display: none; }
       .nav-item { margin: 0; padding: 10px 12px; font-size: 12px; gap: 6px; white-space: nowrap; flex: 0 0 auto; }
       .sidebar > button { margin-top: 0 !important; padding: 8px 10px !important; font-size: 12px; flex: 0 0 auto; }
       .admin-main { padding: 14px; overflow: visible; }
@@ -188,6 +190,23 @@
       .table-container { max-height: none; }
       th, td { padding: 10px 8px; font-size: 12px; }
       .search-input { min-width: 100%; }
+    }
+    /* ===== ADMIN: reportes, cuota, impresión ===== */
+    .msg .error { color: #ff4d4d; }
+    .solo-print { display: none; }
+    .info-text { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+    .cuota-actual { font-size: 34px; font-weight: 900; color: var(--neon); margin: 5px 0 15px; }
+    @media print {
+      body { display: block !important; background: #fff !important; color: #000 !important; padding: 0 !important; }
+      body::before, body::after, .sidebar, .top-cards, .filter-bar, .install-prompt { display: none !important; }
+      #adminView { max-width: none; width: 100%; }
+      .admin-layout { display: block; height: auto; background: #fff; border: none; box-shadow: none; backdrop-filter: none; }
+      .admin-main { overflow: visible; padding: 0; }
+      .data-card { background: #fff; border: none; padding: 0; color: #000; }
+      .table-container { max-height: none; overflow: visible; }
+      th, td { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ccc; position: static; }
+      .solo-print { display: block; color: #000; }
+      h2, h3, p { color: #000 !important; }
     }
   </style>
 </head>
@@ -261,8 +280,10 @@
         </div>
         <div class="nav-menu">
           <div class="nav-item active" onclick="cambiarSeccion('scan')" id="nav-scan">📷 Escanear QR</div>
-          <div class="nav-item" onclick="cambiarSeccion('socios')" id="nav-socios">👥 Socios / Deudores</div>
+          <div class="nav-item" onclick="cambiarSeccion('socios')" id="nav-socios">👥 Lista de socios</div>
           <div class="nav-item" onclick="cambiarSeccion('pagos')" id="nav-pagos">💳 Historial de Pagos</div>
+          <div class="nav-item" onclick="cambiarSeccion('reportes')" id="nav-reportes">📊 Reportes</div>
+          <div class="nav-item" onclick="cambiarSeccion('cuota')" id="nav-cuota">⚙️ Valor de la cuota</div>
         </div>
         <button onclick="cerrarSesion()" style="margin-top:auto; background:transparent; border:1px solid var(--neon); color:var(--neon); padding:10px; border-radius:10px; cursor:pointer;">Cerrar Sesión</button>
       </aside>
@@ -322,12 +343,13 @@
               <button class="filter-btn" id="flt-aldia" onclick="filtrarSocios('AL DÍA')">Al Día</button>
               <button class="filter-btn danger" id="flt-deudor" onclick="filtrarSocios('DEUDOR')">Morosos</button>
               <button class="filter-btn promo" id="flt-racha" onclick="filtrarSocios('RACHA')">🔥 Con Descuento</button>
+              <button class="filter-btn" onclick="descargarCSV('socios')">⬇️ Descargar CSV</button>
               <input type="text" class="search-input" id="buscadorSocios" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="filtrarSocios(filtroActual)">
             </div>
             <div class="table-container">
               <table id="tablaSocios">
-                <thead><tr><th>DNI</th><th>Nombre</th><th>Estado</th><th>Fidelización</th></tr></thead>
-                <tbody id="bodySocios"><tr><td colspan="4" style="text-align:center;">Cargando base de datos...</td></tr></tbody>
+                <thead><tr><th>DNI</th><th>Nombre</th><th>Estado</th><th>Último pago</th><th>Cuota a pagar</th><th>Fidelización</th></tr></thead>
+                <tbody id="bodySocios"><tr><td colspan="6" style="text-align:center;">Cargando base de datos...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -348,7 +370,48 @@
           </div>
         </div>
 
-      </main>
+              <div id="sec-reportes" class="dashboard-section">
+          <div class="data-card">
+            <div class="solo-print"><h2>Energy Fitness - Reporte de deudores</h2><p id="repFecha"></p></div>
+            <h2 style="margin-top:0; font-size:22px;" class="no-print-title">Reporte de Deudores</h2>
+            <p class="info-text" id="repResumen">Cargando...</p>
+            <div class="filter-bar">
+              <button class="filter-btn" onclick="descargarCSV('deudores')">⬇️ Descargar CSV</button>
+              <button class="filter-btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
+              <button class="filter-btn" onclick="copiarDeudores()">📋 Copiar lista</button>
+            </div>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>DNI</th><th>Nombre</th><th>Último pago</th><th>Meses sin pagar</th><th>Cuota a pagar</th></tr></thead>
+                <tbody id="bodyDeudores"><tr><td colspan="5" style="text-align:center;">Cargando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="sec-cuota" class="dashboard-section">
+          <div class="data-card">
+            <h2 style="margin-top:0; font-size:22px;">Valor de la cuota</h2>
+            <p class="info-text" style="margin:0;">Cuota base actual (sin descuentos)</p>
+            <div class="cuota-actual" id="cuotaActual">...</div>
+            <div class="manual-box" style="max-width:420px; margin-top:0;">
+              <input type="number" id="cuotaNueva" inputmode="decimal" min="1" placeholder="Nuevo valor (ej: 25000)">
+              <button type="button" class="btn-primary" id="btnGuardarCuota" onclick="guardarCuota()">GUARDAR</button>
+            </div>
+            <div id="cuotaMsg" class="msg"></div>
+            <p class="info-text">El nuevo valor se aplica a los cobros de ahora en adelante. Los pagos ya registrados no cambian.</p>
+            <h3 style="margin-bottom:5px;">Descuentos por racha</h3>
+            <p class="info-text" style="margin-top:0;">Así queda la cuota según los meses seguidos que el socio viene pagando:</p>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Meses seguidos</th><th>Descuento</th><th>Cuota final</th></tr></thead>
+                <tbody id="bodyDescuentos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+</main>
     </div>
   </div>
 
@@ -356,13 +419,13 @@
     // =======================================================
     // CONEXIÓN CON EL SERVIDOR (Google Apps Script como API)
     // =======================================================
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxFtjXp2RaZxbtj8SrNNctNtpLHCahtuPV5qSSdS1VE-G4ZE-_oCuXduJ9A_mElnAp9NA/exec'; // termina en /exec
+    const API_URL = (typeof window.ENERGY_API_URL === 'string') ? window.ENERGY_API_URL : ''; // se configura en config.js
 
     let sesionToken = null;
     try { sesionToken = localStorage.getItem('ef_token'); } catch (e) {}
 
     async function api(accion, datos) {
-      if (API_URL.indexOf('script.google.com') === -1) throw new Error('Falta configurar API_URL en index.html');
+      if (API_URL.indexOf('script.google.com') === -1) throw new Error('Falta configurar la URL de Apps Script en config.js');
       const r = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita el preflight CORS
@@ -392,14 +455,15 @@
       console.error(e);
       const b1 = document.getElementById('btnLogin'); if (b1) b1.innerText = 'INGRESAR';
       const b2 = document.getElementById('btnRegister'); if (b2) b2.innerText = 'CREAR CUENTA';
-      alert('No se pudo conectar con el servidor. Revisá tu internet y reintentá.');
+      alert(String(e && e.message).indexOf('configurar') !== -1 ? e.message : 'No se pudo conectar con el servidor. Revisá tu internet y reintentá.');
     }
 
     const RUTAS = {
       iniciarSesion: (dni, password) => ['login', { dni: dni, password: password }],
       registrarNuevoSocio: (dni, nombre, apellido, password) => ['registro', { dni: dni, nombre: nombre, apellido: apellido, password: password }],
       obtenerTodoElSistema: () => ['sistema', {}],
-      registrarPagoAdmin: (dni) => ['cobrar', { dni: dni }]
+      registrarPagoAdmin: (dni) => ['cobrar', { dni: dni }],
+      guardarCuota: (valor) => ['guardarCuota', { valor: valor }]
     };
     function crearServidor(ok, fail) {
       return new Proxy({}, { get: (_, nombre) => {
@@ -473,7 +537,10 @@
         inst.innerHTML = '<div class="install-steps">Usá el menú del navegador y elegí <span>"Instalar"</span> o <span>"Crear acceso directo"</span>.</div>';
       }
       actualizarBotonInstalar();
-      setTimeout(() => { prompt.style.display = 'block'; }, 1000);
+      setTimeout(() => {
+        // solo se muestra si seguimos en la pantalla de ingreso (no sobre el panel o la vista del socio)
+        if (document.querySelector('#loginView.active-view, #registerView.active-view')) prompt.style.display = 'block';
+      }, 1000);
     }
 
     async function confirmarInstalacion() {
@@ -513,6 +580,7 @@
       const msg = document.getElementById('loginMsg');
       
       if(!dni || !pass) return msg.innerHTML = '<span class="error">Completá todos los campos</span>';
+      if (btn.innerText === 'CARGANDO...') return;
       btn.innerText = 'CARGANDO...';
       
       servidor
@@ -565,8 +633,7 @@
           document.getElementById('lblActivos').innerText = res.sociosActivos;
           document.getElementById('lblImpagos').innerText = res.impagos;
           document.getElementById('lblRacha').innerText = res.rachaCount; 
-          renderSocios(); 
-          renderPagos();
+          renderTodo();
         }
       }).obtenerTodoElSistema();
     }
@@ -603,7 +670,7 @@
               document.getElementById('lblRecaudacion').innerText = "$" + r.recaudacionHoy.toLocaleString('es-AR');
               document.getElementById('lblImpagos').innerText = r.impagos;
               document.getElementById('lblRacha').innerText = r.rachaCount;
-              renderSocios(); renderPagos(); 
+              renderTodo(); 
             }).obtenerTodoElSistema();
           } else {
              document.getElementById('adminScanNombre').innerText = "Atención";
@@ -684,28 +751,6 @@
       renderSocios();
     }
 
-    function renderSocios() {
-      const busqueda = document.getElementById('buscadorSocios').value.toLowerCase();
-      const tbody = document.getElementById('bodySocios');
-      tbody.innerHTML = '';
-      
-      let filtrados = baseDatos.socios.filter(s => {
-        let coincideFiltro = true;
-        if (filtroActual === 'AL DÍA' || filtroActual === 'DEUDOR') { coincideFiltro = s.estado === filtroActual; }
-        else if (filtroActual === 'RACHA') { coincideFiltro = s.racha > 0; }
-        let coincideBusqueda = s.nombre.toLowerCase().includes(busqueda) || s.dni.toString().includes(busqueda);
-        return coincideFiltro && coincideBusqueda;
-      });
-      if(filtrados.length === 0) return tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No se encontraron resultados</td></tr>';
-
-      filtrados.forEach(s => {
-        let badgeClass = s.estado === 'AL DÍA' ? 'badge-status badge-aldia' : 'badge-status badge-deudor';
-        let rachaVisual = s.racha > 0 ? `<span class="badge-racha">🔥 ${s.racha} meses</span>` : '0 meses';
-        let row = `<tr><td><strong>${s.dni}</strong></td><td>${s.nombre}</td><td><span class="${badgeClass}">${s.estado}</span></td><td>${rachaVisual}</td></tr>`;
-        tbody.innerHTML += row;
-      });
-    }
-
     function renderPagos() {
       const busqueda = document.getElementById('buscadorPagos').value.toLowerCase();
       const tbody = document.getElementById('bodyPagos');
@@ -714,10 +759,146 @@
       if(filtrados.length === 0) return tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay pagos registrados</td></tr>';
 
       filtrados.forEach(p => {
-        let row = `<tr><td>${p.fecha}</td><td style="color:var(--text-muted)">${p.hora}</td><td><strong>${p.dni}</strong></td><td style="color:#00e676; font-weight:bold;">$${p.monto.toLocaleString('es-AR')}</td></tr>`;
+        let row = `<tr><td>${p.fecha}</td><td style="color:var(--text-muted)">${p.hora}</td><td><strong>${esc(p.dni)}</strong></td><td style="color:#00e676; font-weight:bold;">$${p.monto.toLocaleString('es-AR')}</td></tr>`;
         tbody.innerHTML += row;
       });
     }
+
+    function esc(v) {
+      return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function fmtMes(m) {
+      const p = String(m).split('-');
+      return p.length === 2 ? p[0].padStart(2, '0') + '/' + p[1] : m;
+    }
+    function dinero(n) { return '$' + Math.round(n || 0).toLocaleString('es-AR'); }
+
+    function sociosFiltrados() {
+      const busqueda = document.getElementById('buscadorSocios').value.toLowerCase();
+      return baseDatos.socios.filter(s => {
+        let ok = true;
+        if (filtroActual === 'AL DÍA' || filtroActual === 'DEUDOR') ok = (s.estado === filtroActual);
+        else if (filtroActual === 'RACHA') ok = (s.racha > 0);
+        return ok && (s.nombre.toLowerCase().includes(busqueda) || s.dni.toString().includes(busqueda));
+      });
+    }
+
+    function renderSocios() {
+      const tbody = document.getElementById('bodySocios');
+      const lista = sociosFiltrados();
+      if (lista.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No se encontraron resultados</td></tr>'; return; }
+      tbody.innerHTML = lista.map(s => {
+        const badge = s.estado === 'AL DÍA' ? 'badge-status badge-aldia' : 'badge-status badge-deudor';
+        const racha = s.racha > 0 ? '<span class="badge-racha">🔥 ' + s.racha + ' meses</span>' : '0 meses';
+        const cuota = s.estado === 'DEUDOR' ? dinero(s.total) : '—';
+        return '<tr><td><strong>' + esc(s.dni) + '</strong></td><td>' + esc(s.nombre) + '</td><td><span class="' + badge + '">' + s.estado + '</span></td><td>' + (s.ultimoPago ? fmtMes(s.ultimoPago) : 'Nunca') + '</td><td>' + cuota + '</td><td>' + racha + '</td></tr>';
+      }).join('');
+    }
+
+    function deudoresOrdenados() {
+      const peso = s => (s.mesesSinPagar === null ? 999 : s.mesesSinPagar);
+      return baseDatos.socios.filter(s => s.estado === 'DEUDOR').sort((a, b) => peso(b) - peso(a));
+    }
+    function textoMeses(s) { return s.mesesSinPagar === null ? 'Nunca pagó' : String(s.mesesSinPagar); }
+
+    function renderReportes() {
+      const d = deudoresOrdenados();
+      const total = d.reduce((acc, s) => acc + (s.total || 0), 0);
+      document.getElementById('repResumen').innerText = d.length + ' socios deben la cuota de este mes. Total a cobrar: ' + dinero(total);
+      document.getElementById('repFecha').innerText = new Date().toLocaleDateString('es-AR');
+      document.getElementById('bodyDeudores').innerHTML = d.length === 0
+        ? '<tr><td colspan="5" style="text-align:center;">No hay deudores 🎉</td></tr>'
+        : d.map(s => '<tr><td><strong>' + esc(s.dni) + '</strong></td><td>' + esc(s.nombre) + '</td><td>' + (s.ultimoPago ? fmtMes(s.ultimoPago) : 'Nunca') + '</td><td>' + textoMeses(s) + '</td><td>' + dinero(s.total) + '</td></tr>').join('');
+    }
+
+    function descuentoPorRacha(r) { return r <= 0 ? 0 : (r === 1 ? 5 : Math.min(5 + (r - 1) * 2, 25)); }
+    function renderCuota() {
+      const base = baseDatos.cuotaBase || 0;
+      document.getElementById('cuotaActual').innerText = dinero(base);
+      document.getElementById('bodyDescuentos').innerHTML = [0, 1, 2, 3, 4, 6, 8, 11].map(r => {
+        const d = descuentoPorRacha(r);
+        return '<tr><td>' + r + (r === 11 ? ' o más' : '') + '</td><td>' + d + '%</td><td>' + dinero(base - base * d / 100) + '</td></tr>';
+      }).join('');
+    }
+
+    function renderTodo() {
+      document.getElementById('lblRecaudacion').innerText = '$' + (baseDatos.recaudacionHoy || 0).toLocaleString('es-AR');
+      document.getElementById('lblActivos').innerText = baseDatos.sociosActivos;
+      document.getElementById('lblImpagos').innerText = baseDatos.impagos;
+      document.getElementById('lblRacha').innerText = baseDatos.rachaCount;
+      renderSocios(); renderPagos(); renderReportes(); renderCuota();
+    }
+
+    function celdaCSV(v) {
+      let t = String(v === null || v === undefined ? '' : v);
+      if (/^[=+\-@]/.test(t)) t = "'" + t;
+      return '"' + t.replace(/"/g, '""') + '"';
+    }
+    function descargarCSV(tipo) {
+      const hoy = new Date().toISOString().slice(0, 10);
+      let filas, nombre;
+      if (tipo === 'deudores') {
+        nombre = 'deudores-' + hoy + '.csv';
+        filas = [['DNI', 'Nombre', 'Último pago', 'Meses sin pagar', 'Cuota a pagar']].concat(
+          deudoresOrdenados().map(s => [s.dni, s.nombre, s.ultimoPago ? fmtMes(s.ultimoPago) : 'Nunca', textoMeses(s), Math.round(s.total)]));
+      } else {
+        nombre = 'socios-' + hoy + '.csv';
+        filas = [['DNI', 'Nombre', 'Estado', 'Último pago', 'Cuota a pagar', 'Racha (meses)']].concat(
+          sociosFiltrados().map(s => [s.dni, s.nombre, s.estado, s.ultimoPago ? fmtMes(s.ultimoPago) : 'Nunca', s.estado === 'DEUDOR' ? Math.round(s.total) : '', s.racha]));
+      }
+      const csv = '\uFEFF' + filas.map(f => f.map(celdaCSV).join(';')).join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = nombre;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    async function copiarDeudores() {
+      const d = deudoresOrdenados();
+      const texto = d.map(s => s.nombre + ' - DNI ' + s.dni + ' - ' + dinero(s.total)).join('\n');
+      try { await navigator.clipboard.writeText(texto); alert('Lista copiada (' + d.length + ' socios).'); }
+      catch (e) { alert('No se pudo copiar. Usá "Descargar CSV".'); }
+    }
+
+    function guardarCuota() {
+      const input = document.getElementById('cuotaNueva');
+      const msg = document.getElementById('cuotaMsg');
+      const btn = document.getElementById('btnGuardarCuota');
+      const valor = parseFloat(String(input.value).replace(',', '.'));
+      if (!(valor > 0)) { msg.innerHTML = '<span class="error">Ingresá un valor mayor a 0</span>'; return; }
+      if (!confirm('¿Cambiar la cuota base a ' + dinero(valor) + '?')) return;
+      btn.innerText = 'GUARDANDO...'; btn.disabled = true;
+      servidor
+        .withSuccessHandler(res => {
+          btn.innerText = 'GUARDAR'; btn.disabled = false;
+          if (res.exito) {
+            msg.innerHTML = '<span style="color:#00e676">Cuota actualizada a ' + dinero(res.cuotaBase) + '</span>';
+            input.value = '';
+            servidor.withSuccessHandler(r => { if (r.exito) { baseDatos = r; renderTodo(); } }).obtenerTodoElSistema();
+          } else {
+            msg.innerHTML = '<span class="error">' + esc(res.mensaje) + '</span>';
+          }
+        })
+        .withFailureHandler(() => {
+          btn.innerText = 'GUARDAR'; btn.disabled = false;
+          msg.innerHTML = '<span class="error">No se pudo conectar. Reintentá.</span>';
+        })
+        .guardarCuota(valor);
+    }
+
+    // Enter = enviar el formulario (PC)
+    function activarEnter(ids, fn) {
+      ids.forEach(id => {
+        document.getElementById(id).addEventListener('keydown', e => {
+          if (e.key === 'Enter' && !e.repeat) { e.preventDefault(); fn(); }
+        });
+      });
+    }
+    activarEnter(['loginDni', 'loginPass'], hacerLogin);
+    activarEnter(['regDni', 'regNombre', 'regApellido', 'regPass'], hacerRegistro);
+    activarEnter(['dniManual'], cobrarManual);
+    activarEnter(['cuotaNueva'], guardarCuota);
 
     function cerrarSesion() {
       limpiarSesion();
