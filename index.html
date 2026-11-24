@@ -208,6 +208,48 @@
       .solo-print { display: block; color: #000; }
       h2, h3, p { color: #000 !important; }
     }
+    /* ===== SORTEOS Y PROMOCIONES ===== */
+    .f-input { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; padding: 12px 14px; font-family: 'Montserrat', sans-serif; font-size: 16px; outline: none; }
+    .f-input:focus { border-color: var(--neon); }
+    textarea.f-input { resize: vertical; min-height: 70px; }
+    .form-stack { display: flex; flex-direction: column; gap: 10px; max-width: 620px; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .form-row > * { flex: 1 1 200px; min-width: 0; }
+    .check-line { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
+    .form-stack button.btn-primary { width: auto; align-self: flex-start; padding: 12px 24px; font-size: 14px; }
+    .item-card { border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px 16px; margin-top: 12px; background: rgba(255,255,255,0.03); display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .item-card h4 { margin: 0 0 4px; font-size: 16px; }
+    .item-card p { margin: 2px 0; font-size: 13px; color: var(--text-muted); }
+    .item-card.ganado { border-color: rgba(0,230,118,0.4); }
+    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-accent { border-color: var(--neon); color: var(--neon); font-weight: 700; }
+    .btn-danger { color: #ff4d4d; border-color: rgba(255,77,77,0.4); }
+    .badge-pausada { background: rgba(255,255,255,0.1); color: #ccc; }
+    .nov-titulo { margin: 22px 0 10px; font-size: 16px; text-align: left; }
+    .nov-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; text-align: left; }
+    .nov-card h4 { margin: 0 0 4px; font-size: 15px; }
+    .nov-card p { margin: 3px 0; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+    .nov-card .nov-ok { color: #00e676; font-weight: 700; }
+    .nov-card .nov-warn { color: var(--neon); font-weight: 700; }
+    .nov-card.nov-gane { border-color: #00e676; }
+    .nov-beneficio { display: inline-block; background: rgba(255,107,0,0.15); color: var(--neon); border-radius: 8px; padding: 3px 9px; font-weight: 800; font-size: 13px; margin: 4px 0; }
+    /* Pantalla del sorteo en vivo */
+    .stage { position: fixed; inset: 0; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 35%, #2a1200 0%, #0a0a0a 70%); text-align: center; padding: 20px; box-sizing: border-box; }
+    .stage.open { display: flex; }
+    #confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .stage-top { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: 14px; display: flex; gap: 8px; z-index: 2; }
+    .stage-body { position: relative; z-index: 1; width: 100%; max-width: 1000px; }
+    .stage-label { letter-spacing: 6px; color: var(--text-muted); font-weight: 700; font-size: clamp(12px, 2vw, 18px); }
+    .stage-premio { font-size: clamp(26px, 5vw, 56px); font-weight: 900; color: var(--neon); text-shadow: 0 0 30px var(--neon-glow); margin: 8px 0; }
+    .stage-sub { min-height: 24px; color: var(--text-muted); font-size: clamp(13px, 2vw, 20px); margin-bottom: 24px; }
+    .stage-name { font-size: clamp(34px, 8vw, 96px); font-weight: 900; line-height: 1.1; min-height: 1.2em; word-break: break-word; }
+    .stage-name.ganador { color: #fff; text-shadow: 0 0 40px var(--neon-glow); animation: stagePop .7s cubic-bezier(.2, 1.4, .4, 1); }
+    @keyframes stagePop { 0% { transform: scale(.6); opacity: .3; } 100% { transform: scale(1); opacity: 1; } }
+    .stage-dni { color: var(--text-muted); font-size: clamp(14px, 2.4vw, 26px); margin-top: 8px; min-height: 1.2em; letter-spacing: 2px; }
+    .stage-actions { margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .stage-actions button.btn-primary { width: auto; padding: 18px 48px; font-size: clamp(16px, 3vw, 26px); }
+    @media (prefers-reduced-motion: reduce) { .stage-name.ganador { animation: none; } }
+    @media print { .stage { display: none !important; } }
   </style>
 </head>
 <body>
@@ -252,6 +294,25 @@
   </div>
 
   <!-- ================= VISTA SOCIO ================= -->
+  <div id="sorteoStage" class="stage" aria-hidden="true">
+    <canvas id="confetti"></canvas>
+    <div class="stage-top">
+      <button type="button" class="filter-btn" onclick="pantallaCompleta()">⛶ Pantalla completa</button>
+      <button type="button" class="filter-btn" onclick="cerrarStage()">✕ Cerrar</button>
+    </div>
+    <div class="stage-body">
+      <div class="stage-label">SORTEAMOS</div>
+      <div class="stage-premio" id="stagePremio"></div>
+      <div class="stage-sub" id="stageSub"></div>
+      <div class="stage-name" id="stageName">¿Quién será?</div>
+      <div class="stage-dni" id="stageDni"></div>
+      <div class="stage-actions">
+        <button type="button" class="btn-primary" id="btnStageSortear" onclick="lanzarSorteo(false)">🎲 ¡SORTEAR!</button>
+        <button type="button" class="filter-btn" id="btnStageRepetir" style="display:none;" onclick="lanzarSorteo(true)">🔁 El ganador no está: sortear de nuevo</button>
+      </div>
+    </div>
+  </div>
+
   <div id="socioView" class="view">
     <div class="logo-container" style="margin-bottom: 10px;"><div class="logo-icon" style="font-size:35px;">🏃</div><h1 style="font-size:30px;">Energy</h1></div>
     <h2 id="socioNombre">¡Hola!</h2>
@@ -267,6 +328,7 @@
         <div class="racha-bar-bg"><div class="racha-bar-fill" id="socioRachaBar"></div></div>
       </div>
     </div>
+    <div id="novedadesSocio" style="display:none; width:100%;"></div>
     <button onclick="cerrarSesion()" style="margin-top:20px; background:transparent; border:none; color:var(--text-muted); cursor:pointer;">Cerrar Sesión</button>
   </div>
 
@@ -284,6 +346,8 @@
           <div class="nav-item" onclick="cambiarSeccion('pagos')" id="nav-pagos">💳 Historial de Pagos</div>
           <div class="nav-item" onclick="cambiarSeccion('reportes')" id="nav-reportes">📊 Reportes</div>
           <div class="nav-item" onclick="cambiarSeccion('cuota')" id="nav-cuota">⚙️ Valor de la cuota</div>
+          <div class="nav-item" onclick="cambiarSeccion('sorteos')" id="nav-sorteos">🎁 Sorteos</div>
+          <div class="nav-item" onclick="cambiarSeccion('promos')" id="nav-promos">🏷️ Promociones</div>
         </div>
         <button onclick="cerrarSesion()" style="margin-top:auto; background:transparent; border:1px solid var(--neon); color:var(--neon); padding:10px; border-radius:10px; cursor:pointer;">Cerrar Sesión</button>
       </aside>
@@ -408,6 +472,46 @@
                 <tbody id="bodyDescuentos"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div id="sec-sorteos" class="dashboard-section">
+          <div class="data-card">
+            <h2 style="margin-top:0; font-size:22px;">🎁 Sorteos</h2>
+            <p class="info-text" id="sorteoParticipantes">Cargando...</p>
+            <div class="form-stack">
+              <input class="f-input" id="sorteoPremio" maxlength="100" placeholder="¿Qué se sortea? (ej: 1 mes gratis)">
+              <input class="f-input" id="sorteoDesc" maxlength="300" placeholder="Detalle (opcional)">
+              <button type="button" class="btn-primary" id="btnCrearSorteo" onclick="crearSorteo()">CREAR SORTEO</button>
+            </div>
+            <div id="sorteoMsg" class="msg"></div>
+            <p class="info-text" style="margin-bottom:0;">Participan los socios con la cuota al día en el momento de sortear. Al tocar "Realizar sorteo" se abre una pantalla pensada para mostrar en vivo.</p>
+            <div id="listaSorteos"></div>
+          </div>
+        </div>
+
+        <div id="sec-promos" class="dashboard-section">
+          <div class="data-card">
+            <h2 style="margin-top:0; font-size:22px;">🏷️ Promociones</h2>
+            <p class="info-text">Beneficios del gimnasio en locales y comercios. Los socios ven las que están activas y vigentes.</p>
+            <div class="form-stack">
+              <div class="form-row">
+                <input class="f-input" id="promoTitulo" maxlength="80" placeholder="Título (ej: 20% en indumentaria)">
+                <input class="f-input" id="promoLocal" maxlength="80" placeholder="Local o comercio">
+              </div>
+              <div class="form-row">
+                <input class="f-input" id="promoBeneficio" maxlength="60" placeholder="Beneficio (ej: 20% OFF)">
+                <input class="f-input" id="promoVigencia" type="date" title="Vigente hasta (opcional)">
+              </div>
+              <textarea class="f-input" id="promoDesc" maxlength="300" placeholder="Condiciones o detalle (opcional)"></textarea>
+              <label class="check-line"><input type="checkbox" id="promoActiva" checked> Mostrar a los socios</label>
+              <div class="item-actions">
+                <button type="button" class="btn-primary" id="btnGuardarPromo" onclick="guardarPromo()">AGREGAR PROMOCIÓN</button>
+                <button type="button" class="filter-btn" id="btnCancelarPromo" style="display:none;" onclick="resetPromoForm()">Cancelar edición</button>
+              </div>
+            </div>
+            <div id="promoMsg" class="msg"></div>
+            <div id="listaPromos"></div>
           </div>
         </div>
 
@@ -611,6 +715,8 @@
 
     function cargarVistaSocio(datos) {
       switchView('socioView');
+      socioPagado = (datos.estado === 'PAGADA');
+      cargarNovedades();
       document.getElementById('socioNombre').innerText = `¡Hola, ${datos.nombre.split(' ')[0]}!`;
       document.getElementById('socioEstado').innerText = datos.estado;
       document.getElementById('socioEstado').style.color = (datos.estado === 'PAGADA') ? '#00e676' : 'var(--neon)';
@@ -624,6 +730,7 @@
 
     function cargarVistaAdmin() {
       switchView('adminView');
+      cargarNovedades();
       // La cámara se activa con el botón 'ACTIVAR CÁMARA' (iniciarCamara)
       
       servidor.withSuccessHandler(res => {
@@ -646,6 +753,7 @@
       
       if(seccionId === 'scan' && camaraDeseada && !camaraActiva) iniciarCamara();
       if(seccionId !== 'scan') detenerCamara();
+      if(seccionId === 'sorteos' || seccionId === 'promos') cargarNovedades();
     }
 
     function onScanSuccess(decodedText) {
@@ -900,8 +1008,276 @@
     activarEnter(['dniManual'], cobrarManual);
     activarEnter(['cuotaNueva'], guardarCuota);
 
+    // ===================== SORTEOS Y PROMOCIONES =====================
+    let novedades = { sorteos: [], promociones: [], participantes: 0 };
+    let socioPagado = false;
+    let sorteoActual = null;
+    let animando = false;
+    let confetiRAF = null;
+    let promoEditando = null;
+
+    function fmtFecha(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
+    function dniParcial(d) { d = String(d || ''); return 'DNI ' + '•'.repeat(Math.max(d.length - 3, 0)) + d.slice(-3); }
+    function msgHtml(ok, t) { return '<span ' + (ok ? 'style="color:#00e676"' : 'class="error"') + '>' + esc(t) + '</span>'; }
+
+    async function cargarNovedades() {
+      try {
+        const r = await api('novedades', {});
+        if (!r.exito) return;
+        novedades = r;
+        if (document.getElementById('adminView').classList.contains('active-view')) { renderSorteosAdmin(); renderPromosAdmin(); }
+        else renderNovedadesSocio();
+      } catch (e) { console.error(e); }
+    }
+
+    // ---------- Sorteos (admin) ----------
+    function renderSorteosAdmin() {
+      document.getElementById('sorteoParticipantes').innerText = novedades.participantes + ' socios con la cuota al día participan en los sorteos.';
+      const cont = document.getElementById('listaSorteos');
+      if (!novedades.sorteos.length) { cont.innerHTML = '<p class="info-text">Todavía no hay sorteos. Creá el primero arriba.</p>'; return; }
+      cont.innerHTML = novedades.sorteos.map(s => {
+        const hecho = s.estado === 'REALIZADO';
+        const detalle = s.descripcion ? '<p>' + esc(s.descripcion) + '</p>' : '';
+        const info = hecho
+          ? '<p>🏆 Ganador/a: <strong style="color:#fff">' + esc(s.ganador) + '</strong> · ' + esc(dniParcial(s.ganadorDni)) + '</p><p>' + esc(s.fechaSorteo) + ' · ' + s.participantes + ' participantes</p>'
+          : '<p>Pendiente de sortear</p>';
+        const botones = (hecho ? '' : '<button class="filter-btn btn-accent" data-accion="abrir" data-id="' + esc(s.id) + '">🎲 Realizar sorteo</button>')
+          + '<button class="filter-btn btn-danger" data-accion="eliminar" data-id="' + esc(s.id) + '">Eliminar</button>';
+        return '<div class="item-card' + (hecho ? ' ganado' : '') + '"><div><h4>🎁 ' + esc(s.premio) + '</h4>' + detalle + info + '</div><div class="item-actions">' + botones + '</div></div>';
+      }).join('');
+    }
+
+    document.getElementById('listaSorteos').addEventListener('click', async e => {
+      const b = e.target.closest('[data-accion]'); if (!b) return;
+      const id = b.dataset.id;
+      if (b.dataset.accion === 'abrir') return abrirSorteo(id);
+      if (b.dataset.accion === 'eliminar') {
+        if (!confirm('¿Eliminar este sorteo?')) return;
+        try { const r = await api('eliminarSorteo', { id: id }); if (!r.exito && r.mensaje) alert(r.mensaje); cargarNovedades(); } catch (err) { falloDeRed(err); }
+      }
+    });
+
+    async function crearSorteo() {
+      const p = document.getElementById('sorteoPremio'), d = document.getElementById('sorteoDesc');
+      const msg = document.getElementById('sorteoMsg'), btn = document.getElementById('btnCrearSorteo');
+      if (!p.value.trim()) { msg.innerHTML = msgHtml(false, 'Escribí qué se sortea'); return; }
+      btn.disabled = true;
+      try {
+        const r = await api('crearSorteo', { premio: p.value, descripcion: d.value });
+        if (r.exito) { p.value = ''; d.value = ''; cargarNovedades(); }
+        msg.innerHTML = msgHtml(!!r.exito, r.mensaje || '');
+      } catch (e) { falloDeRed(e); }
+      btn.disabled = false;
+    }
+
+    // ---------- Pantalla del sorteo en vivo ----------
+    function setStage(sub, nombre, dni, ganador) {
+      document.getElementById('stageSub').innerText = sub;
+      const n = document.getElementById('stageName');
+      n.innerText = nombre; n.style.filter = ''; n.classList.toggle('ganador', !!ganador);
+      document.getElementById('stageDni').innerText = dni;
+      const hecho = !!(sorteoActual && sorteoActual.hecho);
+      document.getElementById('btnStageSortear').style.display = hecho ? 'none' : '';
+      document.getElementById('btnStageRepetir').style.display = hecho ? '' : 'none';
+    }
+
+    function abrirSorteo(id) {
+      const s = novedades.sorteos.find(x => x.id === id);
+      if (!s) return;
+      sorteoActual = { id: s.id, premio: s.premio, hecho: false };
+      document.getElementById('stagePremio').innerText = s.premio;
+      setStage('Participan ' + novedades.participantes + ' socios con la cuota al día', '¿Quién será?', '', false);
+      const st = document.getElementById('sorteoStage');
+      st.classList.add('open'); st.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarStage(forzar) {
+      if (animando && !forzar) return;
+      cancelAnimationFrame(confetiRAF);
+      const st = document.getElementById('sorteoStage');
+      st.classList.remove('open'); st.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      sorteoActual = null; animando = false;
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      if (!forzar) cargarNovedades();
+    }
+    function pantallaCompleta() {
+      const st = document.getElementById('sorteoStage');
+      if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); }
+      else if (st.requestFullscreen) { st.requestFullscreen().catch(() => {}); }
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarStage(); });
+
+    function animarRuleta(nombres, ganador) {
+      return new Promise(resolve => {
+        const el = document.getElementById('stageName');
+        const reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const total = reducido ? 1200 : 6000, inicio = performance.now();
+        let ultimo = '';
+        (function paso() {
+          const t = performance.now() - inicio;
+          if (t >= total || !nombres.length) { el.style.filter = ''; el.innerText = ganador; return resolve(); }
+          let n, intentos = 0;
+          do { n = nombres[Math.floor(Math.random() * nombres.length)]; intentos++; } while (nombres.length > 1 && n === ultimo && intentos < 10);
+          ultimo = n; el.innerText = n;
+          const prog = t / total;
+          el.style.filter = 'blur(' + ((1 - prog) * 2.5).toFixed(1) + 'px)';
+          setTimeout(paso, 50 + prog * prog * 450); // empieza rápido y va frenando
+        })();
+      });
+    }
+
+    function lanzarConfeti() {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const c = document.getElementById('confetti'), ctx = c.getContext('2d');
+      c.width = window.innerWidth; c.height = window.innerHeight;
+      const colores = ['#ff6b00', '#ff8c00', '#ffd000', '#ffffff', '#00e676', '#ff4500'];
+      const ps = Array.from({ length: 220 }, () => ({
+        x: Math.random() * c.width, y: -20 - Math.random() * c.height * 0.6,
+        w: 6 + Math.random() * 8, h: 8 + Math.random() * 10,
+        vx: -2 + Math.random() * 4, vy: 2 + Math.random() * 5,
+        r: Math.random() * 6.28, vr: -0.2 + Math.random() * 0.4,
+        col: colores[Math.floor(Math.random() * colores.length)]
+      }));
+      const fin = performance.now() + 7000;
+      cancelAnimationFrame(confetiRAF);
+      (function frame() {
+        ctx.clearRect(0, 0, c.width, c.height);
+        let vivos = 0;
+        ps.forEach(p => {
+          p.x += p.vx; p.y += p.vy; p.r += p.vr;
+          if (p.y < c.height + 30) {
+            vivos++;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.col;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+          }
+        });
+        if (vivos && performance.now() < fin) confetiRAF = requestAnimationFrame(frame);
+        else ctx.clearRect(0, 0, c.width, c.height);
+      })();
+    }
+
+    async function lanzarSorteo(repetir) {
+      if (animando || !sorteoActual) return;
+      if (repetir && !confirm('¿El ganador no está? Se descarta y se sortea otro entre los demás.')) return;
+      animando = true;
+      const previo = sorteoActual;
+      const hecho = previo.hecho;
+      cancelAnimationFrame(confetiRAF);
+      document.getElementById('btnStageSortear').style.display = 'none';
+      document.getElementById('btnStageRepetir').style.display = 'none';
+      document.getElementById('stageDni').innerText = '';
+      document.getElementById('stageName').classList.remove('ganador');
+      document.getElementById('stageSub').innerText = 'Sorteando...';
+      document.getElementById('stageName').innerText = '...';
+      let res;
+      try { res = await api('sortear', { id: previo.id, repetir: !!repetir }); }
+      catch (e) { res = { exito: false, mensaje: 'No se pudo conectar. Reintentá.' }; }
+      if (sorteoActual !== previo) { animando = false; return; } // se cerró la sesión
+      if (!res.exito) {
+        animando = false;
+        setStage(res.mensaje || 'No se pudo sortear', hecho ? previo.ganador : '¿Quién será?', hecho ? dniParcial(previo.dni) : '', hecho);
+        return;
+      }
+      await animarRuleta(res.participantes || [], res.ganador.nombre);
+      previo.hecho = true; previo.ganador = res.ganador.nombre; previo.dni = res.ganador.dni;
+      animando = false;
+      setStage('🎉 ¡Tenemos ganador/a! 🎉', res.ganador.nombre, dniParcial(res.ganador.dni), true);
+      lanzarConfeti();
+    }
+
+    // ---------- Promociones (admin) ----------
+    function renderPromosAdmin() {
+      const cont = document.getElementById('listaPromos');
+      if (!novedades.promociones.length) { cont.innerHTML = '<p class="info-text">Todavía no cargaste promociones.</p>'; return; }
+      cont.innerHTML = novedades.promociones.map(p => {
+        const cls = p.estado === 'ACTIVA' ? 'badge-aldia' : (p.estado === 'VENCIDA' ? 'badge-deudor' : 'badge-pausada');
+        const lineas = [p.local ? '📍 ' + esc(p.local) : '', p.beneficio ? '<strong style="color:var(--neon)">' + esc(p.beneficio) + '</strong>' : '', p.vigencia ? 'Hasta el ' + fmtFecha(p.vigencia) : 'Sin fecha de vencimiento']
+          .filter(Boolean).join(' · ');
+        return '<div class="item-card"><div><h4>' + esc(p.titulo) + ' <span class="badge-status ' + cls + '">' + p.estado + '</span></h4><p>' + lineas + '</p>'
+          + (p.descripcion ? '<p>' + esc(p.descripcion) + '</p>' : '') + '</div><div class="item-actions">'
+          + '<button class="filter-btn" data-accion="editar" data-id="' + esc(p.id) + '">✏️ Editar</button>'
+          + '<button class="filter-btn btn-danger" data-accion="eliminar" data-id="' + esc(p.id) + '">Eliminar</button></div></div>';
+      }).join('');
+    }
+
+    function resetPromoForm() {
+      promoEditando = null;
+      ['promoTitulo', 'promoLocal', 'promoBeneficio', 'promoVigencia', 'promoDesc'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('promoActiva').checked = true;
+      document.getElementById('btnGuardarPromo').innerText = 'AGREGAR PROMOCIÓN';
+      document.getElementById('btnCancelarPromo').style.display = 'none';
+    }
+
+    document.getElementById('listaPromos').addEventListener('click', async e => {
+      const b = e.target.closest('[data-accion]'); if (!b) return;
+      const p = novedades.promociones.find(x => x.id === b.dataset.id);
+      if (!p) return;
+      if (b.dataset.accion === 'editar') {
+        promoEditando = p.id;
+        document.getElementById('promoTitulo').value = p.titulo; document.getElementById('promoLocal').value = p.local;
+        document.getElementById('promoBeneficio').value = p.beneficio; document.getElementById('promoVigencia').value = p.vigencia;
+        document.getElementById('promoDesc').value = p.descripcion; document.getElementById('promoActiva').checked = p.activa;
+        document.getElementById('btnGuardarPromo').innerText = 'GUARDAR CAMBIOS';
+        document.getElementById('btnCancelarPromo').style.display = '';
+        document.getElementById('promoMsg').innerHTML = '';
+        document.getElementById('promoTitulo').focus();
+        document.getElementById('promoTitulo').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (b.dataset.accion === 'eliminar') {
+        if (!confirm('¿Eliminar la promoción "' + p.titulo + '"?')) return;
+        try { await api('eliminarPromo', { id: p.id }); if (promoEditando === p.id) resetPromoForm(); cargarNovedades(); } catch (err) { falloDeRed(err); }
+      }
+    });
+
+    async function guardarPromo() {
+      const msg = document.getElementById('promoMsg'), btn = document.getElementById('btnGuardarPromo');
+      const promo = {
+        id: promoEditando,
+        titulo: document.getElementById('promoTitulo').value, local: document.getElementById('promoLocal').value,
+        beneficio: document.getElementById('promoBeneficio').value, vigencia: document.getElementById('promoVigencia').value,
+        descripcion: document.getElementById('promoDesc').value, activa: document.getElementById('promoActiva').checked
+      };
+      if (!promo.titulo.trim()) { msg.innerHTML = msgHtml(false, 'Escribí el título de la promoción'); return; }
+      btn.disabled = true;
+      try {
+        const r = await api('guardarPromo', { promo: promo });
+        if (r.exito) { resetPromoForm(); cargarNovedades(); }
+        msg.innerHTML = msgHtml(!!r.exito, r.mensaje || '');
+      } catch (e) { falloDeRed(e); }
+      btn.disabled = false;
+    }
+
+    // ---------- Vista del socio ----------
+    function renderNovedadesSocio() {
+      const box = document.getElementById('novedadesSocio');
+      const pend = novedades.sorteos.filter(s => s.estado === 'PENDIENTE');
+      const hechos = novedades.sorteos.filter(s => s.estado === 'REALIZADO').slice(0, 3);
+      let html = '';
+      if (pend.length || hechos.length) {
+        html += '<h3 class="nov-titulo">🎁 Sorteos</h3>';
+        html += pend.map(s => '<div class="nov-card"><h4>' + esc(s.premio) + '</h4>' + (s.descripcion ? '<p>' + esc(s.descripcion) + '</p>' : '')
+          + '<p>Participan los socios con la cuota al día.</p>'
+          + (socioPagado ? '<p class="nov-ok">✅ Estás participando</p>' : '<p class="nov-warn">Pagá tu cuota del mes para participar</p>') + '</div>').join('');
+        html += hechos.map(s => '<div class="nov-card' + (s.esMio ? ' nov-gane' : '') + '"><h4>🏆 ' + esc(s.premio) + '</h4><p>Ganador/a: '
+          + esc(s.ganador) + ' · ' + esc(String(s.fechaSorteo).split(' ')[0]) + '</p>' + (s.esMio ? '<p class="nov-ok">🎉 ¡Ganaste este sorteo!</p>' : '') + '</div>').join('');
+      }
+      if (novedades.promociones.length) {
+        html += '<h3 class="nov-titulo">🏷️ Promociones</h3>';
+        html += novedades.promociones.map(p => '<div class="nov-card"><h4>' + esc(p.titulo) + '</h4>'
+          + (p.beneficio ? '<span class="nov-beneficio">' + esc(p.beneficio) + '</span>' : '')
+          + (p.local ? '<p>📍 ' + esc(p.local) + '</p>' : '') + (p.descripcion ? '<p>' + esc(p.descripcion) + '</p>' : '')
+          + (p.vigencia ? '<p>Válida hasta el ' + fmtFecha(p.vigencia) + '</p>' : '') + '</div>').join('');
+      }
+      box.innerHTML = html; box.style.display = html ? 'block' : 'none';
+    }
+
+    activarEnter(['sorteoPremio', 'sorteoDesc'], crearSorteo);
+    activarEnter(['promoTitulo', 'promoLocal', 'promoBeneficio'], guardarPromo);
+
     function cerrarSesion() {
       limpiarSesion();
+      cerrarStage(true);
       detenerCamara(); camaraDeseada = false;
       mostrarOverlayCamara(true, 'Para escanear, permití el acceso a la cámara cuando el navegador te lo pida.', false);
       document.getElementById('loginDni').value = ''; document.getElementById('loginPass').value = '';
