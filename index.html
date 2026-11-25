@@ -248,6 +248,7 @@
     .stage-dni { color: var(--text-muted); font-size: clamp(14px, 2.4vw, 26px); margin-top: 8px; min-height: 1.2em; letter-spacing: 2px; }
     .stage-actions { margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
     .stage-actions button.btn-primary { width: auto; padding: 18px 48px; font-size: clamp(16px, 3vw, 26px); }
+    .stage-sub.error { color: #ff6b6b; font-weight: 700; }
     @media (prefers-reduced-motion: reduce) { .stage-name.ganador { animation: none; } }
     @media print { .stage { display: none !important; } }
   </style>
@@ -1023,7 +1024,15 @@
     async function cargarNovedades() {
       try {
         const r = await api('novedades', {});
-        if (!r.exito) return;
+        if (!r.exito) {
+          if (!r.sesionExpirada && document.getElementById('adminView').classList.contains('active-view')) {
+            const aviso = 'No se pudieron cargar los datos. Verificá que actualizaste Apps Script con una NUEVA VERSIÓN de la implementación.';
+            document.getElementById('sorteoParticipantes').innerText = aviso;
+            document.getElementById('listaSorteos').innerHTML = '';
+            document.getElementById('listaPromos').innerHTML = '<p class="info-text">' + aviso + '</p>';
+          }
+          return;
+        }
         novedades = r;
         if (document.getElementById('adminView').classList.contains('active-view')) { renderSorteosAdmin(); renderPromosAdmin(); }
         else renderNovedadesSocio();
@@ -1072,7 +1081,7 @@
 
     // ---------- Pantalla del sorteo en vivo ----------
     function setStage(sub, nombre, dni, ganador) {
-      document.getElementById('stageSub').innerText = sub;
+      const subEl = document.getElementById('stageSub'); subEl.innerText = sub; subEl.classList.remove('error');
       const n = document.getElementById('stageName');
       n.innerText = nombre; n.style.filter = ''; n.classList.toggle('ganador', !!ganador);
       document.getElementById('stageDni').innerText = dni;
@@ -1087,6 +1096,10 @@
       sorteoActual = { id: s.id, premio: s.premio, hecho: false };
       document.getElementById('stagePremio').innerText = s.premio;
       setStage('Participan ' + novedades.participantes + ' socios con la cuota al día', '¿Quién será?', '', false);
+      if (!novedades.participantes) {
+        document.getElementById('stageSub').innerText = 'Ningún socio tiene la cuota al día: no hay a quién sortear';
+        document.getElementById('stageSub').classList.add('error');
+      }
       const st = document.getElementById('sorteoStage');
       st.classList.add('open'); st.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
@@ -1178,6 +1191,7 @@
       if (!res.exito) {
         animando = false;
         setStage(res.mensaje || 'No se pudo sortear', hecho ? previo.ganador : '¿Quién será?', hecho ? dniParcial(previo.dni) : '', hecho);
+        document.getElementById('stageSub').classList.add('error');
         return;
       }
       await animarRuleta(res.participantes || [], res.ganador.nombre);
