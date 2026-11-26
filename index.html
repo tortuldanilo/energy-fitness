@@ -251,6 +251,31 @@
     .stage-sub.error { color: #ff6b6b; font-weight: 700; }
     @media (prefers-reduced-motion: reduce) { .stage-name.ganador { animation: none; } }
     @media print { .stage { display: none !important; } }
+    .racha-panel-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .racha-panel-header span:last-child { white-space: nowrap; font-weight: 700; }
+    /* ===== CELULAR: menú desplegable y tablas en tarjetas ===== */
+    .badge-status, .badge-racha { white-space: nowrap; display: inline-block; }
+    .menu-toggle { display: none; }
+    @media (max-width: 900px) {
+      .sidebar { flex-wrap: wrap; }
+      .sidebar > button.menu-toggle { display: flex; align-items: center; gap: 10px; flex: 1 1 0; min-width: 0; margin: 0 !important; padding: 11px 14px !important; font-size: 13px; font-weight: 700; font-family: inherit; text-align: left; color: #fff; background: rgba(255,107,0,0.1); border: 1px solid var(--neon); border-radius: 10px; cursor: pointer; }
+      .menu-toggle .menu-actual { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-weight: 600; }
+      .sidebar.menu-open .menu-toggle > span:last-child { transform: rotate(180deg); }
+      .nav-menu { display: none; flex: 1 0 100%; order: 3; flex-direction: column; overflow: visible; gap: 6px; }
+      .sidebar.menu-open .nav-menu { display: flex; }
+      .nav-item { font-size: 14px; padding: 13px 14px; white-space: normal; }
+    }
+    @media screen and (max-width: 700px) {
+      .table-container { overflow-x: visible; }
+      table.tabla-cards, table.tabla-cards tbody, table.tabla-cards tr, table.tabla-cards td { display: block; width: 100%; box-sizing: border-box; }
+      table.tabla-cards thead { display: none; }
+      table.tabla-cards tr { border: 1px solid var(--glass-border); border-radius: 14px; padding: 6px 14px; margin-bottom: 10px; background: rgba(255,255,255,0.03); }
+      table.tabla-cards td { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: right; font-size: 14px; }
+      table.tabla-cards td:last-child { border-bottom: none; }
+      table.tabla-cards td::before { content: attr(data-label); flex: 0 0 auto; color: var(--text-muted); font-size: 12px; font-weight: 700; text-align: left; }
+      table.tabla-cards td[colspan] { display: block; text-align: center; }
+      table.tabla-cards td[colspan]::before { content: none; }
+    }
   </style>
 </head>
 <body>
@@ -341,7 +366,8 @@
         <div class="logo-container" style="text-align:left; margin-bottom:10px;">
           <div class="logo-icon" style="font-size:35px; text-align:left;">🏃</div><h1 style="font-size:26px;">Energy</h1><h2>fitness</h2>
         </div>
-        <div class="nav-menu">
+        <button type="button" class="menu-toggle" id="menuToggle" onclick="alternarMenu()" aria-expanded="false" aria-controls="navMenu"><span>☰ Menú</span><span class="menu-actual" id="menuActual">📷 Escanear QR</span><span>▾</span></button>
+        <div class="nav-menu" id="navMenu">
           <div class="nav-item active" onclick="cambiarSeccion('scan')" id="nav-scan">📷 Escanear QR</div>
           <div class="nav-item" onclick="cambiarSeccion('socios')" id="nav-socios">👥 Lista de socios</div>
           <div class="nav-item" onclick="cambiarSeccion('pagos')" id="nav-pagos">💳 Historial de Pagos</div>
@@ -378,7 +404,7 @@
                   <p>Scanned Socio:</p><h2 id="adminScanNombre">Esperando...</h2>
                   <p>DNI: <span id="adminScanDni" style="color:white; font-weight:bold;">---</span></p>
                   <p style="margin-top:15px;">CUOTA: <span id="adminScanEstado" style="color:var(--neon)">---</span></p>
-                  <p>Racha: <span id="adminScanRacha">0</span> meses (<span id="adminScanDesc">0</span>% desc.)</p>
+                  <p>Racha: <span id="adminScanRacha">0</span> mes(es) (<span id="adminScanDesc">0</span>% desc.)</p>
                   <p>Total a cobrar: <span style="color:var(--neon); font-size:24px; font-weight:bold;">$<span id="adminScanTotal">---</span></span></p>
                   <div style="margin-top:20px;"><button id="btnConfirmarScan" class="btn-primary" style="opacity:0.5;">CONFIRMAR PAGO</button></div>
                   <div class="manual-box">
@@ -412,7 +438,7 @@
               <input type="text" class="search-input" id="buscadorSocios" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="filtrarSocios(filtroActual)">
             </div>
             <div class="table-container">
-              <table id="tablaSocios">
+              <table id="tablaSocios" class="tabla-cards">
                 <thead><tr><th>DNI</th><th>Nombre</th><th>Estado</th><th>Último pago</th><th>Cuota a pagar</th><th>Fidelización</th></tr></thead>
                 <tbody id="bodySocios"><tr><td colspan="6" style="text-align:center;">Cargando base de datos...</td></tr></tbody>
               </table>
@@ -427,7 +453,7 @@
               <input type="text" class="search-input" id="buscadorPagos" placeholder="🔍 Buscar pago por DNI..." onkeyup="renderPagos()">
             </div>
             <div class="table-container">
-              <table>
+              <table class="tabla-cards">
                 <thead><tr><th>Fecha</th><th>Hora</th><th>DNI Socio</th><th>Monto Cobrado</th></tr></thead>
                 <tbody id="bodyPagos"><tr><td colspan="4" style="text-align:center;">Cargando pagos...</td></tr></tbody>
               </table>
@@ -446,7 +472,7 @@
               <button class="filter-btn" onclick="copiarDeudores()">📋 Copiar lista</button>
             </div>
             <div class="table-container">
-              <table>
+              <table class="tabla-cards">
                 <thead><tr><th>DNI</th><th>Nombre</th><th>Último pago</th><th>Meses sin pagar</th><th>Cuota a pagar</th></tr></thead>
                 <tbody id="bodyDeudores"><tr><td colspan="5" style="text-align:center;">Cargando...</td></tr></tbody>
               </table>
@@ -468,7 +494,7 @@
             <h3 style="margin-bottom:5px;">Descuentos por racha</h3>
             <p class="info-text" style="margin-top:0;">Así queda la cuota según los meses seguidos que el socio viene pagando:</p>
             <div class="table-container">
-              <table>
+              <table class="tabla-cards">
                 <thead><tr><th>Meses seguidos</th><th>Descuento</th><th>Cuota final</th></tr></thead>
                 <tbody id="bodyDescuentos"></tbody>
               </table>
@@ -723,7 +749,7 @@
       document.getElementById('socioEstado').style.color = (datos.estado === 'PAGADA') ? '#00e676' : 'var(--neon)';
       document.getElementById('socioTotal').innerText = (datos.estado === 'PAGADA') ? 'Al día' : `$${datos.total.toLocaleString('es-AR')}`;
       document.getElementById('socioDescuento').innerText = `Descuento: ${datos.descuento}%`;
-      document.getElementById('socioRachaNum').innerText = `${datos.racha} meses`;
+      document.getElementById('socioRachaNum').innerText = txtMeses(datos.racha);
       setTimeout(() => { document.getElementById('socioRachaBar').style.width = `${Math.min((datos.racha/12)*100, 100)}%`; }, 300);
       document.getElementById('qr-container').innerHTML = ""; 
       new QRCode(document.getElementById('qr-container'), { text: datos.dni.toString(), width: 160, height: 160, colorDark:"#000", colorLight:"#fff", correctLevel:QRCode.CorrectLevel.H });
@@ -746,9 +772,28 @@
       }).obtenerTodoElSistema();
     }
 
+    function alternarMenu(forzar) {
+      const sb = document.querySelector('.sidebar');
+      const abierto = (typeof forzar === 'boolean') ? forzar : !sb.classList.contains('menu-open');
+      sb.classList.toggle('menu-open', abierto);
+      document.getElementById('menuToggle').setAttribute('aria-expanded', String(abierto));
+    }
+
+    function etiquetarTablas() {
+      document.querySelectorAll('table.tabla-cards').forEach(t => {
+        const cab = Array.from(t.querySelectorAll('thead th')).map(th => th.textContent.trim());
+        t.querySelectorAll('tbody tr').forEach(tr => {
+          Array.from(tr.children).forEach((td, i) => { if (!td.hasAttribute('colspan')) td.setAttribute('data-label', cab[i] || ''); });
+        });
+      });
+    }
+    function txtMeses(n) { return n + (Number(n) === 1 ? ' mes' : ' meses'); }
+
     function cambiarSeccion(seccionId) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.getElementById('nav-' + seccionId).classList.add('active');
+      document.getElementById('menuActual').innerText = document.getElementById('nav-' + seccionId).innerText;
+      alternarMenu(false);
       document.querySelectorAll('.dashboard-section').forEach(el => el.classList.remove('active-section'));
       document.getElementById('sec-' + seccionId).classList.add('active-section');
       
@@ -871,6 +916,7 @@
         let row = `<tr><td>${p.fecha}</td><td style="color:var(--text-muted)">${p.hora}</td><td><strong>${esc(p.dni)}</strong></td><td style="color:#00e676; font-weight:bold;">$${p.monto.toLocaleString('es-AR')}</td></tr>`;
         tbody.innerHTML += row;
       });
+      etiquetarTablas();
     }
 
     function esc(v) {
@@ -898,10 +944,11 @@
       if (lista.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No se encontraron resultados</td></tr>'; return; }
       tbody.innerHTML = lista.map(s => {
         const badge = s.estado === 'AL DÍA' ? 'badge-status badge-aldia' : 'badge-status badge-deudor';
-        const racha = s.racha > 0 ? '<span class="badge-racha">🔥 ' + s.racha + ' meses</span>' : '0 meses';
+        const racha = s.racha > 0 ? '<span class="badge-racha">🔥 ' + txtMeses(s.racha) + '</span>' : '0 meses';
         const cuota = s.estado === 'DEUDOR' ? dinero(s.total) : '—';
         return '<tr><td><strong>' + esc(s.dni) + '</strong></td><td>' + esc(s.nombre) + '</td><td><span class="' + badge + '">' + s.estado + '</span></td><td>' + (s.ultimoPago ? fmtMes(s.ultimoPago) : 'Nunca') + '</td><td>' + cuota + '</td><td>' + racha + '</td></tr>';
       }).join('');
+      etiquetarTablas();
     }
 
     function deudoresOrdenados() {
@@ -918,6 +965,7 @@
       document.getElementById('bodyDeudores').innerHTML = d.length === 0
         ? '<tr><td colspan="5" style="text-align:center;">No hay deudores 🎉</td></tr>'
         : d.map(s => '<tr><td><strong>' + esc(s.dni) + '</strong></td><td>' + esc(s.nombre) + '</td><td>' + (s.ultimoPago ? fmtMes(s.ultimoPago) : 'Nunca') + '</td><td>' + textoMeses(s) + '</td><td>' + dinero(s.total) + '</td></tr>').join('');
+      etiquetarTablas();
     }
 
     function descuentoPorRacha(r) { return r <= 0 ? 0 : (r === 1 ? 5 : Math.min(5 + (r - 1) * 2, 25)); }
@@ -928,6 +976,7 @@
         const d = descuentoPorRacha(r);
         return '<tr><td>' + r + (r === 11 ? ' o más' : '') + '</td><td>' + d + '%</td><td>' + dinero(base - base * d / 100) + '</td></tr>';
       }).join('');
+      etiquetarTablas();
     }
 
     function renderTodo() {
@@ -1292,6 +1341,7 @@
     function cerrarSesion() {
       limpiarSesion();
       cerrarStage(true);
+      alternarMenu(false);
       detenerCamara(); camaraDeseada = false;
       mostrarOverlayCamara(true, 'Para escanear, permití el acceso a la cámara cuando el navegador te lo pida.', false);
       document.getElementById('loginDni').value = ''; document.getElementById('loginPass').value = '';
